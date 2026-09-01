@@ -1,0 +1,40 @@
+[
+  {
+    "id": "v1",
+    "name": "The Dubliner",
+    "locality": "St. Julian's",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "16:00",
+      "endTime": "19:00",
+      "deal": "1+1 on all draught beers"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Arsenal vs Chelsea",
+        "time": "16:00"
+      }
+    ]
+  },
+  {
+    "id": "v2",
+    "name": "Corner Pocket Bar",
+    "locality": "Sliema",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": false,
+      "startTime": "18:00",
+      "endTime": "20:00",
+      "deal": "Half price cocktails"
+    },
+    "sports": [
+      {
+        "category": "F1",
+        "match": "Italian Grand Prix - Race",
+        "time": "15:00"
+      }
+    ]
+  }
+]

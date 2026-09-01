@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Malta Offers & Live Sports</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#dc2626">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans pb-24">
+
+  <header class="bg-red-600 text-white p-4 text-center font-bold text-xl shadow-md sticky top-0 z-10">
+    🇲🇹 Malta Offers & Sports
+  </header>
+
+  <main class="max-w-md mx-auto p-4">
+
+    <div id="tab-home-content" class="space-y-5">
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+          <div id="count-deals" class="text-2xl font-bold text-red-600">0</div>
+          <div class="text-xs text-gray-500 font-medium">Active Deals</div>
+        </div>
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+          <div id="count-pl" class="text-2xl font-bold text-blue-600">0</div>
+          <div class="text-xs text-gray-500 font-medium">PL Venues</div>
+        </div>
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+          <div id="count-f1" class="text-2xl font-bold text-emerald-600">0</div>
+          <div class="text-xs text-gray-500 font-medium">F1 Venues</div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-bold text-lg mb-3">All Venues</h2>
+        <div id="home-venue-list" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <div id="tab-drinks-content" class="hidden space-y-4">
+      <h2 class="font-bold text-xl">🍻 Happy Hour Deals</h2>
+      <div id="drinks-list" class="space-y-3"></div>
+    </div>
+
+    <div id="tab-sports-content" class="hidden space-y-4">
+      <h2 class="font-bold text-xl">⚽ Live Sports Broadcasts</h2>
+      <div id="sports-list" class="space-y-3"></div>
+    </div>
+
+    <div id="tab-contact-content" class="hidden space-y-4">
+      <h2 class="font-bold text-xl">📩 Contact & Submit Venue</h2>
+      <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+        <p class="text-sm text-gray-600">Are you a bar owner in Malta or want to submit a new happy hour deal?</p>
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Your Name / Venue</label>
+          <input type="text" placeholder="e.g. The Dubliner" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50">
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Message / Deal Details</label>
+          <textarea rows="3" placeholder="Describe the offer or schedule..." class="w-full p-2.5 border rounded-lg text-sm bg-gray-50"></textarea>
+        </div>
+        <button onclick="alert('Message sent! (Demo mode)')" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-lg text-sm hover:bg-red-700">
+          Send Submission
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-20 max-w-md mx-auto">
+    <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center text-red-600 font-semibold text-xs py-1">
+      <span>🏠</span>
+      <span>Home</span>
+    </button>
+    <button onclick="switchTab('drinks')" id="nav-drinks" class="flex flex-col items-center text-gray-400 font-semibold text-xs py-1">
+      <span>🍺</span>
+      <span>Drinks</span>
+    </button>
+    <button onclick="switchTab('sports')" id="nav-sports" class="flex flex-col items-center text-gray-400 font-semibold text-xs py-1">
+      <span>⚽</span>
+      <span>Sports</span>
+    </button>
+    <button onclick="switchTab('contact')" id="nav-contact" class="flex flex-col items-center text-gray-400 font-semibold text-xs py-1">
+      <span>💬</span>
+      <span>Contact</span>
+    </button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
