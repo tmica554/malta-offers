@@ -53,7 +53,14 @@
       "endTime": "23:59",
       "deal": "€3.50 Cisk Pint All Day"
     },
-    "sports": []
+    "sports": [
+      {
+        "category": "F1",
+        "match": "Italian Grand Prix - Main Race",
+        "date": "2026-09-06",
+        "time": "15:00"
+      }
+    ]
   },
   {
     "id": "v4",
@@ -62,7 +69,7 @@
     "googleMapsUrl": "https://maps.google.com",
     "happyHour": {
       "active": true,
-      "days": ["Tue", "Thu", "Fri"],
+      "days": ["Tue", "Thu", "Fri", "Sat"],
       "startTime": "19:00",
       "endTime": "22:00",
       "deal": "€10 Cocktail Pitchers"
@@ -73,6 +80,54 @@
         "match": "Lincoln City vs Blackburn Rovers",
         "date": "2026-09-01",
         "time": "20:45"
+      },
+      {
+        "category": "F1",
+        "match": "Italian Grand Prix - Qualifying",
+        "date": "2026-09-05",
+        "time": "16:00"
+      }
+    ]
+  },
+  {
+    "id": "v5",
+    "name": "Gzira Sports Lounge",
+    "locality": "Gzira",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Fri", "Sat", "Sun"],
+      "startTime": "16:00",
+      "endTime": "19:00",
+      "deal": "Buy 2 get 1 free craft beers"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Man City vs Liverpool",
+        "date": "2026-09-06",
+        "time": "17:30"
+      }
+    ]
+  },
+  {
+    "id": "v6",
+    "name": "Bugibba Seafront Tavern",
+    "locality": "Bugibba",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Wed", "Thu", "Fri"],
+      "startTime": "14:00",
+      "endTime": "17:00",
+      "deal": "Bucket of 5 Cisk beers for €12"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Tottenham vs Man Utd",
+        "date": "2026-09-02",
+        "time": "21:00"
       }
     ]
   }
