@@ -1,4 +1,4 @@
-const CACHE_NAME = 'malta-offers-v1';
+const CACHE_NAME = 'malta-offers-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
