@@ -130,5 +130,187 @@
         "time": "21:00"
       }
     ]
+  },
+  {
+    "id": "v7",
+    "name": "The Black Gold Saloon",
+    "locality": "Sliema",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "startTime": "17:00",
+      "endTime": "20:00",
+      "deal": "2-for-1 Spirits & Local Draught"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "All Premier League Matches Shown Live",
+        "date": "2026-09-05",
+        "time": "13:30"
+      }
+    ]
+  },
+  {
+    "id": "v8",
+    "name": "City of London Bar",
+    "locality": "St. Julian's",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "startTime": "16:00",
+      "endTime": "19:00",
+      "deal": "€2.50 Pint Offers"
+    },
+    "sports": []
+  },
+  {
+    "id": "v9",
+    "name": "The Gut Taphouse",
+    "locality": "Valletta",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Thu", "Fri", "Sat"],
+      "startTime": "18:00",
+      "endTime": "21:00",
+      "deal": "Free House Tapas with Drinks"
+    },
+    "sports": []
+  },
+  {
+    "id": "v10",
+    "name": "The Brew Grill & Brewery",
+    "locality": "Gzira",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu"],
+      "startTime": "15:00",
+      "endTime": "18:30",
+      "deal": "30% off Freshly Brewed Craft Beer"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "All Live Football Matches",
+        "date": "2026-09-01",
+        "time": "20:00"
+      }
+    ]
+  },
+  {
+    "id": "v11",
+    "name": "Fat Harry's Pub",
+    "locality": "Bugibba",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "startTime": "11:00",
+      "endTime": "17:00",
+      "deal": "€3 Draught Pints"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Premier League Weekend Coverage",
+        "date": "2026-09-05",
+        "time": "13:30"
+      }
+    ]
+  },
+  {
+    "id": "v12",
+    "name": "Tex Mex South",
+    "locality": "Marsaxlokk",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Fri", "Sat", "Sun"],
+      "startTime": "17:00",
+      "endTime": "19:30",
+      "deal": "2-for-1 Cocktails & Nachos"
+    },
+    "sports": []
+  },
+  {
+    "id": "v13",
+    "name": "The Thirsty Barber",
+    "locality": "St. Julian's",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Wed", "Thu", "Fri", "Sat"],
+      "startTime": "19:00",
+      "endTime": "21:00",
+      "deal": "Prosecco & Signature Cocktails 2-for-1"
+    },
+    "sports": []
+  },
+  {
+    "id": "v14",
+    "name": "Sliema Surfside",
+    "locality": "Sliema",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      "startTime": "17:00",
+      "endTime": "19:00",
+      "deal": "Sunset Aperitivo Discounts"
+    },
+    "sports": [
+      {
+        "category": "F1",
+        "match": "F1 Live Broadcast",
+        "date": "2026-09-06",
+        "time": "15:00"
+      }
+    ]
+  },
+  {
+    "id": "v15",
+    "name": "Cheeky Monkey Gastropub",
+    "locality": "Valletta",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "days": ["Tue", "Wed", "Thu", "Fri"],
+      "startTime": "16:00",
+      "endTime": "18:00",
+      "deal": "Buy 1 Get 1 Free Pint"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Lincoln City vs Blackburn Rovers",
+        "date": "2026-09-01",
+        "time": "20:45"
+      }
+    ]
+  },
+  {
+    "id": "v16",
+    "name": "Mellieha Bay Sports Shack",
+    "locality": "Mellieha",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": false,
+      "days": [],
+      "startTime": "",
+      "endTime": "",
+      "deal": ""
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Live English Football",
+        "date": "2026-09-05",
+        "time": "16:00"
+      }
+    ]
   }
 ]
