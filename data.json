@@ -6,17 +6,11 @@
     "googleMapsUrl": "https://maps.google.com",
     "happyHour": {
       "active": true,
-      "startTime": "16:00",
-      "endTime": "19:00",
-      "deal": "1+1 on all draught beers"
+      "startTime": "12:00",
+      "endTime": "20:00",
+      "deal": "1+1 on Pint of Guinness & Local Lager"
     },
-    "sports": [
-      {
-        "category": "Premier League",
-        "match": "Arsenal vs Chelsea",
-        "time": "16:00"
-      }
-    ]
+    "sports": []
   },
   {
     "id": "v2",
@@ -31,8 +25,147 @@
     },
     "sports": [
       {
+        "category": "Premier League",
+        "match": "Arsenal vs Chelsea",
+        "time": "16:00"
+      }
+    ]
+  },
+  {
+    "id": "v3",
+    "name": "Valletta Pub Co.",
+    "locality": "Valletta",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "00:00",
+      "endTime": "23:59",
+      "deal": "€3.50 Cisk Pint All Day"
+    },
+    "sports": [
+      {
         "category": "F1",
-        "match": "Italian Grand Prix - Race",
+        "match": "Italian Grand Prix - Main Race",
+        "time": "15:00"
+      }
+    ]
+  },
+  {
+    "id": "v4",
+    "name": "The Gut Bar",
+    "locality": "Valletta",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "17:00",
+      "endTime": "19:00",
+      "deal": "2-for-1 Spritz & Aperitivo"
+    },
+    "sports": []
+  },
+  {
+    "id": "v5",
+    "name": "Gzira Sports Lounge",
+    "locality": "Gzira",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": false,
+      "startTime": "16:00",
+      "endTime": "18:00",
+      "deal": "Buy 2 get 1 free shots"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Man City vs Liverpool",
+        "time": "17:30"
+      },
+      {
+        "category": "F1",
+        "match": "Qualifying Session",
+        "time": "16:00"
+      }
+    ]
+  },
+  {
+    "id": "v6",
+    "name": "Paceville Sports Bar",
+    "locality": "St. Julian's",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "21:00",
+      "endTime": "23:00",
+      "deal": "€10 Cocktail Pitchers"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Tottenham vs Man Utd",
+        "time": "21:00"
+      }
+    ]
+  },
+  {
+    "id": "v7",
+    "name": "Sliema Promenade Cafe",
+    "locality": "Sliema",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "15:00",
+      "endTime": "18:00",
+      "deal": "€4 Wine by the Glass"
+    },
+    "sports": []
+  },
+  {
+    "id": "v8",
+    "name": "Bugibba Seafront Tavern",
+    "locality": "Bugibba",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "14:00",
+      "endTime": "17:00",
+      "deal": "Bucket of 5 Cisk beers for €12"
+    },
+    "sports": [
+      {
+        "category": "Premier League",
+        "match": "Aston Villa vs Newcastle",
+        "time": "16:00"
+      }
+    ]
+  },
+  {
+    "id": "v9",
+    "name": "Balluta Bay Bar",
+    "locality": "St. Julian's",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": true,
+      "startTime": "18:30",
+      "endTime": "20:30",
+      "deal": "Free tapas with every draught beer"
+    },
+    "sports": []
+  },
+  {
+    "id": "v10",
+    "name": "Gzira Waterfront Bar",
+    "locality": "Gzira",
+    "googleMapsUrl": "https://maps.google.com",
+    "happyHour": {
+      "active": false,
+      "startTime": "17:00",
+      "endTime": "19:00",
+      "deal": "2-for-1 Spirits"
+    },
+    "sports": [
+      {
+        "category": "F1",
+        "match": "Monaco Grand Prix",
         "time": "15:00"
       }
     ]

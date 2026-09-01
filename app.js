@@ -49,9 +49,9 @@ function createVenueCard(venue) {
         <strong>Happy Hour:</strong> ${venue.happyHour.deal} (${venue.happyHour.startTime} - ${venue.happyHour.endTime})
       </div>
       <div class="text-sm text-gray-600">
-        <strong>Sports:</strong> ${venue.sports.map(s => s.category + ': ' + s.match).join(', ')}
+        <strong>Sports:</strong> ${venue.sports.length > 0 ? venue.sports.map(s => s.category + ': ' + s.match).join(', ') : 'None scheduled'}
       </div>
-      <a href="${venue.googleMapsUrl}" target="_blank" class="block text-center bg-red-600 text-white text-sm py-2 rounded-lg font-semibold">
+      <a href="${venue.googleMapsUrl}" target="_blank" class="block text-center bg-red-600 text-white text-sm py-2 rounded-lg font-semibold text-white">
         Get Directions
       </a>
     </div>
@@ -75,12 +75,21 @@ function applyFilters() {
 
   filtered.forEach(venue => {
     homeContainer.innerHTML += createVenueCard(venue);
-    if (venue.happyHour) drinksContainer.innerHTML += createVenueCard(venue);
+    if (venue.happyHour && venue.happyHour.active) drinksContainer.innerHTML += createVenueCard(venue);
     if (venue.sports.length > 0) sportsContainer.innerHTML += createVenueCard(venue);
   });
 }
 
 function switchTab(tabName) {
+  const filterContainer = document.getElementById('locality-filter-container');
+  
+  // Hide locality filter on Contact tab, show on other tabs
+  if (tabName === 'contact') {
+    filterContainer.classList.add('hidden');
+  } else {
+    filterContainer.classList.remove('hidden');
+  }
+
   ['home', 'drinks', 'sports', 'contact'].forEach(tab => {
     const content = document.getElementById(`tab-${tab}-content`);
     const navBtn = document.getElementById(`nav-${tab}`);
