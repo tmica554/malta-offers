@@ -6,11 +6,19 @@
     "googleMapsUrl": "https://maps.google.com",
     "happyHour": {
       "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
       "startTime": "12:00",
       "endTime": "20:00",
       "deal": "1+1 on Pint of Guinness & Local Lager"
     },
-    "sports": []
+    "sports": [
+      {
+        "category": "EFL Championship",
+        "match": "Lincoln City vs Blackburn Rovers",
+        "date": "2026-09-01",
+        "time": "20:45"
+      }
+    ]
   },
   {
     "id": "v2",
@@ -18,15 +26,17 @@
     "locality": "Sliema",
     "googleMapsUrl": "https://maps.google.com",
     "happyHour": {
-      "active": false,
+      "active": true,
+      "days": ["Sat", "Sun"],
       "startTime": "18:00",
       "endTime": "20:00",
-      "deal": "Half price cocktails"
+      "deal": "Half price cocktails (Weekend Special)"
     },
     "sports": [
       {
         "category": "Premier League",
         "match": "Arsenal vs Chelsea",
+        "date": "2026-09-05",
         "time": "16:00"
       }
     ]
@@ -38,135 +48,31 @@
     "googleMapsUrl": "https://maps.google.com",
     "happyHour": {
       "active": true,
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       "startTime": "00:00",
       "endTime": "23:59",
       "deal": "€3.50 Cisk Pint All Day"
     },
-    "sports": [
-      {
-        "category": "F1",
-        "match": "Italian Grand Prix - Main Race",
-        "time": "15:00"
-      }
-    ]
-  },
-  {
-    "id": "v4",
-    "name": "The Gut Bar",
-    "locality": "Valletta",
-    "googleMapsUrl": "https://maps.google.com",
-    "happyHour": {
-      "active": true,
-      "startTime": "17:00",
-      "endTime": "19:00",
-      "deal": "2-for-1 Spritz & Aperitivo"
-    },
     "sports": []
   },
   {
-    "id": "v5",
-    "name": "Gzira Sports Lounge",
-    "locality": "Gzira",
-    "googleMapsUrl": "https://maps.google.com",
-    "happyHour": {
-      "active": false,
-      "startTime": "16:00",
-      "endTime": "18:00",
-      "deal": "Buy 2 get 1 free shots"
-    },
-    "sports": [
-      {
-        "category": "Premier League",
-        "match": "Man City vs Liverpool",
-        "time": "17:30"
-      },
-      {
-        "category": "F1",
-        "match": "Qualifying Session",
-        "time": "16:00"
-      }
-    ]
-  },
-  {
-    "id": "v6",
+    "id": "v4",
     "name": "Paceville Sports Bar",
     "locality": "St. Julian's",
     "googleMapsUrl": "https://maps.google.com",
     "happyHour": {
       "active": true,
-      "startTime": "21:00",
-      "endTime": "23:00",
+      "days": ["Tue", "Thu", "Fri"],
+      "startTime": "19:00",
+      "endTime": "22:00",
       "deal": "€10 Cocktail Pitchers"
     },
     "sports": [
       {
-        "category": "Premier League",
-        "match": "Tottenham vs Man Utd",
-        "time": "21:00"
-      }
-    ]
-  },
-  {
-    "id": "v7",
-    "name": "Sliema Promenade Cafe",
-    "locality": "Sliema",
-    "googleMapsUrl": "https://maps.google.com",
-    "happyHour": {
-      "active": true,
-      "startTime": "15:00",
-      "endTime": "18:00",
-      "deal": "€4 Wine by the Glass"
-    },
-    "sports": []
-  },
-  {
-    "id": "v8",
-    "name": "Bugibba Seafront Tavern",
-    "locality": "Bugibba",
-    "googleMapsUrl": "https://maps.google.com",
-    "happyHour": {
-      "active": true,
-      "startTime": "14:00",
-      "endTime": "17:00",
-      "deal": "Bucket of 5 Cisk beers for €12"
-    },
-    "sports": [
-      {
-        "category": "Premier League",
-        "match": "Aston Villa vs Newcastle",
-        "time": "16:00"
-      }
-    ]
-  },
-  {
-    "id": "v9",
-    "name": "Balluta Bay Bar",
-    "locality": "St. Julian's",
-    "googleMapsUrl": "https://maps.google.com",
-    "happyHour": {
-      "active": true,
-      "startTime": "18:30",
-      "endTime": "20:30",
-      "deal": "Free tapas with every draught beer"
-    },
-    "sports": []
-  },
-  {
-    "id": "v10",
-    "name": "Gzira Waterfront Bar",
-    "locality": "Gzira",
-    "googleMapsUrl": "https://maps.google.com",
-    "happyHour": {
-      "active": false,
-      "startTime": "17:00",
-      "endTime": "19:00",
-      "deal": "2-for-1 Spirits"
-    },
-    "sports": [
-      {
-        "category": "F1",
-        "match": "Monaco Grand Prix",
-        "time": "15:00"
+        "category": "EFL Championship",
+        "match": "Lincoln City vs Blackburn Rovers",
+        "date": "2026-09-01",
+        "time": "20:45"
       }
     ]
   }

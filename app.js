@@ -1,21 +1,30 @@
 let globalVenues = [];
 
-// Calculate Status Badges (LIVE, LAST DRINK, STARTING SOON)
-function getStatusBadge(startTimeStr, endTimeStr, isActive) {
-  if (!isActive || !startTimeStr || !endTimeStr) {
-    return '<span class="bg-gray-100 text-gray-500 text-xs px-2.5 py-1 rounded-full font-bold">Inactive</span>';
+function getTodayString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayDayName() {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return days[new Date().getDay()];
+}
+
+function getStatusBadge(startTimeStr, endTimeStr, isDealToday) {
+  if (!isDealToday || !startTimeStr || !endTimeStr) {
+    return '<span class="bg-gray-100 text-gray-500 text-xs px-2.5 py-1 rounded-full font-bold">No Deal Today</span>';
   }
 
   const now = new Date();
   const currentMins = now.getHours() * 60 + now.getMinutes();
-
   const [sH, sM] = startTimeStr.split(':').map(Number);
   const startMins = sH * 60 + sM;
-
   const [eH, eM] = endTimeStr.split(':').map(Number);
   const endMins = eH * 60 + eM;
 
-  // Active Deal
   if (currentMins >= startMins && currentMins < endMins) {
     const minsLeft = endMins - currentMins;
     if (minsLeft <= 30) {
@@ -24,7 +33,6 @@ function getStatusBadge(startTimeStr, endTimeStr, isActive) {
     return '<span class="bg-green-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">🟢 LIVE NOW</span>';
   }
 
-  // Starting Soon (within 60 minutes)
   if (currentMins < startMins && (startMins - currentMins) <= 60) {
     const minsUntil = startMins - currentMins;
     return `<span class="bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">🍊 STARTING SOON (${minsUntil}m)</span>`;
@@ -33,9 +41,15 @@ function getStatusBadge(startTimeStr, endTimeStr, isActive) {
   return '<span class="bg-gray-100 text-gray-500 text-xs px-2.5 py-1 rounded-full font-bold">Inactive</span>';
 }
 
-function createVenueCard(venue) {
-  const badgeHtml = getStatusBadge(venue.happyHour.startTime, venue.happyHour.endTime, venue.happyHour.active);
-  
+function createVenueCard(venue, todaySports) {
+  const todayDay = getTodayDayName();
+  const isDealToday = venue.happyHour.active && venue.happyHour.days && venue.happyHour.days.includes(todayDay);
+  const badgeHtml = getStatusBadge(venue.happyHour.startTime, venue.happyHour.endTime, isDealToday);
+
+  const sportsHtml = todaySports.length > 0
+    ? todaySports.map(s => `${s.category}: ${s.match} (${s.time})`).join(', ')
+    : 'None today';
+
   return `
     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
       <div class="flex justify-between items-start">
@@ -46,12 +60,12 @@ function createVenueCard(venue) {
         ${badgeHtml}
       </div>
       <div class="text-sm bg-red-50 text-red-900 p-2.5 rounded-lg">
-        <strong>Happy Hour:</strong> ${venue.happyHour.deal} (${venue.happyHour.startTime} - ${venue.happyHour.endTime})
+        <strong>Happy Hour:</strong> ${isDealToday ? `${venue.happyHour.deal} (${venue.happyHour.startTime} - ${venue.happyHour.endTime})` : 'No deal today'}
       </div>
       <div class="text-sm text-gray-600">
-        <strong>Sports:</strong> ${venue.sports.length > 0 ? venue.sports.map(s => s.category + ': ' + s.match).join(', ') : 'None scheduled'}
+        <strong>Sports today:</strong> ${sportsHtml}
       </div>
-      <a href="${venue.googleMapsUrl}" target="_blank" class="block text-center bg-red-600 text-white text-sm py-2 rounded-lg font-semibold text-white">
+      <a href="${venue.googleMapsUrl}" target="_blank" class="block text-center bg-red-600 text-white text-sm py-2 rounded-lg font-semibold">
         Get Directions
       </a>
     </div>
@@ -60,10 +74,10 @@ function createVenueCard(venue) {
 
 function applyFilters() {
   const selectedLocality = document.getElementById('locality-filter').value;
-  
-  const filtered = globalVenues.filter(v => {
-    return selectedLocality === 'ALL' || v.locality === selectedLocality;
-  });
+  const todayStr = getTodayString();
+  const todayDay = getTodayDayName();
+
+  const filtered = globalVenues.filter(v => selectedLocality === 'ALL' || v.locality === selectedLocality);
 
   const homeContainer = document.getElementById('home-venue-list');
   const drinksContainer = document.getElementById('drinks-list');
@@ -74,16 +88,17 @@ function applyFilters() {
   sportsContainer.innerHTML = '';
 
   filtered.forEach(venue => {
-    homeContainer.innerHTML += createVenueCard(venue);
-    if (venue.happyHour && venue.happyHour.active) drinksContainer.innerHTML += createVenueCard(venue);
-    if (venue.sports.length > 0) sportsContainer.innerHTML += createVenueCard(venue);
+    const todaySports = (venue.sports || []).filter(s => s.date === todayStr);
+    const isDealToday = venue.happyHour.active && venue.happyHour.days && venue.happyHour.days.includes(todayDay);
+
+    homeContainer.innerHTML += createVenueCard(venue, todaySports);
+    if (isDealToday) drinksContainer.innerHTML += createVenueCard(venue, todaySports);
+    if (todaySports.length > 0) sportsContainer.innerHTML += createVenueCard(venue, todaySports);
   });
 }
 
 function switchTab(tabName) {
   const filterContainer = document.getElementById('locality-filter-container');
-  
-  // Hide locality filter on Contact tab, show on other tabs
   if (tabName === 'contact') {
     filterContainer.classList.add('hidden');
   } else {
@@ -109,10 +124,12 @@ fetch('data.json')
   .then(res => res.json())
   .then(venues => {
     globalVenues = venues;
-    
-    document.getElementById('count-deals').textContent = venues.filter(v => v.happyHour.active).length;
-    document.getElementById('count-pl').textContent = venues.filter(v => v.sports.some(s => s.category === 'Premier League')).length;
-    document.getElementById('count-f1').textContent = venues.filter(v => v.sports.some(s => s.category === 'F1')).length;
+    const todayStr = getTodayString();
+    const todayDay = getTodayDayName();
+
+    document.getElementById('count-deals').textContent = venues.filter(v => v.happyHour.active && v.happyHour.days && v.happyHour.days.includes(todayDay)).length;
+    document.getElementById('count-pl').textContent = venues.filter(v => v.sports.some(s => s.date === todayStr && s.category.includes('Championship'))).length;
+    document.getElementById('count-f1').textContent = venues.filter(v => v.sports.some(s => s.date === todayStr && s.category === 'F1')).length;
 
     applyFilters();
   });
