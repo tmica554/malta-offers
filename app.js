@@ -40,71 +40,131 @@ function populateDateFilter() {
   }
 }
 
-// Generate badges for Happy Hour AND Live Sports
-function getBadgesHtml(venue, dateSports, isDealAvailable, isSelectedToday) {
-  let badges = [];
+// Evaluate Happy Hour availability & time window
+function getHHStatus(venue, selectedDateStr) {
+  if (!venue.happyHour || !venue.happyHour.active || !venue.happyHour.days) {
+    return { valid: false, status: 'none' };
+  }
+
+  const selectedDateObj = new Date(selectedDateStr + 'T00:00:00');
+  const selectedDayName = DAYS_SHORT[selectedDateObj.getDay()];
+
+  if (!venue.happyHour.days.includes(selectedDayName)) {
+    return { valid: false, status: 'none' };
+  }
+
+  const isToday = selectedDateStr === getTodayString();
+  if (!isToday) {
+    return { valid: true, status: 'scheduled' };
+  }
+
+  if (!venue.happyHour.startTime || !venue.happyHour.endTime) {
+    return { valid: false, status: 'none' };
+  }
 
   const now = new Date();
   const currentMins = now.getHours() * 60 + now.getMinutes();
+  const [sH, sM] = venue.happyHour.startTime.split(':').map(Number);
+  const startMins = sH * 60 + sM;
+  const [eH, eM] = venue.happyHour.endTime.split(':').map(Number);
+  const endMins = eH * 60 + eM;
 
-  // 1. Happy Hour Badge
-  if (isDealAvailable && venue.happyHour.startTime && venue.happyHour.endTime) {
+  // EXPIRED DEAL: Automatically hide if current time passed end time
+  if (currentMins >= endMins) {
+    return { valid: false, status: 'ended' };
+  }
+
+  if (currentMins >= startMins && currentMins < endMins) {
+    const minsLeft = endMins - currentMins;
+    if (minsLeft <= 30) {
+      return { valid: true, status: 'last_drink', minsLeft };
+    }
+    return { valid: true, status: 'live' };
+  }
+
+  if (currentMins < startMins && (startMins - currentMins) <= 60) {
+    const minsUntil = startMins - currentMins;
+    return { valid: true, status: 'starting_soon', minsUntil };
+  }
+
+  if (currentMins < startMins) {
+    return { valid: true, status: 'later_today' };
+  }
+
+  return { valid: false, status: 'none' };
+}
+
+// Filter valid sports (hiding finished matches on today's view)
+function getValidSports(venue, selectedDateStr) {
+  const isToday = selectedDateStr === getTodayString();
+  const now = new Date();
+  const currentMins = now.getHours() * 60 + now.getMinutes();
+
+  return (venue.sports || []).filter(s => {
+    if (s.date !== selectedDateStr) return false;
+    if (isToday && s.time) {
+      const [mH, mM] = s.time.split(':').map(Number);
+      const matchStartMins = mH * 60 + mM;
+      if (currentMins >= matchStartMins + 115) return false; // Match finished
+    }
+    return true;
+  });
+}
+
+function getBadgesHtml(hhInfo, validSports, isSelectedToday) {
+  let badges = [];
+  const now = new Date();
+  const currentMins = now.getHours() * 60 + now.getMinutes();
+
+  // Happy Hour Badges
+  if (hhInfo.valid) {
     if (!isSelectedToday) {
       badges.push('<span class="bg-blue-100 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold">🍺 HH Scheduled</span>');
     } else {
-      const [sH, sM] = venue.happyHour.startTime.split(':').map(Number);
-      const startMins = sH * 60 + sM;
-      const [eH, eM] = venue.happyHour.endTime.split(':').map(Number);
-      const endMins = eH * 60 + eM;
-
-      if (currentMins >= startMins && currentMins < endMins) {
-        const minsLeft = endMins - currentMins;
-        if (minsLeft <= 30) {
-          badges.push(`<span class="bg-red-600 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">🚨 LAST DRINK (${minsLeft}m left)</span>`);
-        } else {
-          badges.push('<span class="bg-green-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">🟢 HH LIVE</span>');
-        }
-      } else if (currentMins < startMins && (startMins - currentMins) <= 60) {
-        const minsUntil = startMins - currentMins;
-        badges.push(`<span class="bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">🍊 HH IN ${minsUntil}M</span>`);
+      if (hhInfo.status === 'live') {
+        badges.push('<span class="bg-green-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">🍹 DRINKS UP!</span>');
+      } else if (hhInfo.status === 'last_drink') {
+        badges.push(`<span class="bg-red-600 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">🚨 LAST DRINK (${hhInfo.minsLeft}m left)</span>`);
+      } else if (hhInfo.status === 'starting_soon') {
+        badges.push(`<span class="bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">🍊 HH IN ${hhInfo.minsUntil}M</span>`);
+      } else if (hhInfo.status === 'later_today') {
+        badges.push('<span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-bold">🍺 HH Today</span>');
       }
     }
   }
 
-  // 2. Sports Badge
-  if (dateSports.length > 0) {
+  // Sports Badges
+  if (validSports.length > 0) {
     if (!isSelectedToday) {
       badges.push('<span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match Day</span>');
     } else {
-      dateSports.forEach(s => {
+      validSports.forEach(s => {
         if (s.time) {
           const [mH, mM] = s.time.split(':').map(Number);
           const matchStartMins = mH * 60 + mM;
-          const matchEndMins = matchStartMins + 115; // Estimated 115 min broadcast
+          const matchEndMins = matchStartMins + 115;
 
           if (currentMins >= matchStartMins && currentMins < matchEndMins) {
             badges.push('<span class="bg-emerald-600 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚽ MATCH LIVE</span>');
           } else if (currentMins < matchStartMins && (matchStartMins - currentMins) <= 60) {
             const minsUntil = matchStartMins - currentMins;
             badges.push(`<span class="bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">⚽ KICKOFF IN ${minsUntil}M</span>`);
+          } else if (currentMins < matchStartMins) {
+            badges.push(`<span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match (${s.time})</span>`);
           }
         }
       });
     }
   }
 
-  if (badges.length === 0) {
-    return '<span class="bg-gray-100 text-gray-500 text-xs px-2.5 py-1 rounded-full font-bold">Inactive</span>';
-  }
-
   return `<div class="flex flex-wrap gap-1 justify-end">${badges.join('')}</div>`;
 }
 
-function createVenueCard(venue, dateSports, isDealAvailable, isSelectedToday) {
-  const badgeHtml = getBadgesHtml(venue, dateSports, isDealAvailable, isSelectedToday);
+function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
+  const badgeHtml = getBadgesHtml(hhInfo, validSports, isSelectedToday);
 
-  const sportsHtml = dateSports.length > 0
-    ? dateSports.map(s => `${s.category}: ${s.match} (${s.time})`).join(', ')
+  const sportsHtml = validSports.length > 0
+    ? validSports.map(s => `${s.category}: ${s.match} (${s.time})`).join(', ')
     : 'None scheduled';
 
   return `
@@ -117,7 +177,7 @@ function createVenueCard(venue, dateSports, isDealAvailable, isSelectedToday) {
         ${badgeHtml}
       </div>
       <div class="text-sm bg-red-50 text-red-900 p-2.5 rounded-lg">
-        <strong>Happy Hour:</strong> ${isDealAvailable ? `${venue.happyHour.deal} (${venue.happyHour.startTime} - ${venue.happyHour.endTime})` : 'No deal on this date'}
+        <strong>Happy Hour:</strong> ${hhInfo.valid ? `${venue.happyHour.deal} (${venue.happyHour.startTime} - ${venue.happyHour.endTime})` : 'No active deal'}
       </div>
       <div class="text-sm text-gray-600">
         <strong>Sports:</strong> ${sportsHtml}
@@ -130,13 +190,11 @@ function createVenueCard(venue, dateSports, isDealAvailable, isSelectedToday) {
 }
 
 function applyFilters() {
-  const selectedDateStr = document.getElementById('date-filter').value || getTodayString();
+  const dateSelect = document.getElementById('date-filter');
+  const selectedDateStr = dateSelect.value || getTodayString();
   const selectedLocality = document.getElementById('locality-filter').value;
 
-  const selectedDateObj = new Date(selectedDateStr + 'T00:00:00');
-  const selectedDayName = DAYS_SHORT[selectedDateObj.getDay()];
   const isSelectedToday = selectedDateStr === getTodayString();
-
   const filtered = globalVenues.filter(v => selectedLocality === 'ALL' || v.locality === selectedLocality);
 
   const homeContainer = document.getElementById('home-venue-list');
@@ -152,26 +210,33 @@ function applyFilters() {
   let f1Count = 0;
 
   filtered.forEach(venue => {
-    const dateSports = (venue.sports || []).filter(s => s.date === selectedDateStr);
-    const isDealAvailable = venue.happyHour.active && venue.happyHour.days && venue.happyHour.days.includes(selectedDayName);
+    const hhInfo = getHHStatus(venue, selectedDateStr);
+    const validSports = getValidSports(venue, selectedDateStr);
 
-    if (isDealAvailable) activeDealsCount++;
-    if (dateSports.some(s => s.category.includes('Premier League') || s.category.includes('Championship'))) plCount++;
-    if (dateSports.some(s => s.category === 'F1')) f1Count++;
+    if (hhInfo.valid) activeDealsCount++;
+    if (validSports.some(s => s.category.includes('Premier League') || s.category.includes('Championship'))) plCount++;
+    if (validSports.some(s => s.category === 'F1')) f1Count++;
 
-    const cardHtml = createVenueCard(venue, dateSports, isDealAvailable, isSelectedToday);
+    const cardHtml = createVenueCard(venue, hhInfo, validSports, isSelectedToday);
 
-    // HOME TAB STRICT FILTER: Only show cards with active deals OR sports on the selected date
-    if (isDealAvailable || dateSports.length > 0) {
-      homeContainer.innerHTML += cardHtml;
+    // HOME TAB STRICT FILTER: Show only live/imminent HH or live/upcoming sports today
+    if (isSelectedToday) {
+      const isHHLiveOrImminent = hhInfo.valid && (hhInfo.status === 'live' || hhInfo.status === 'last_drink' || hhInfo.status === 'starting_soon');
+      if (isHHLiveOrImminent || validSports.length > 0) {
+        homeContainer.innerHTML += cardHtml;
+      }
+    } else {
+      if (hhInfo.valid || validSports.length > 0) {
+        homeContainer.innerHTML += cardHtml;
+      }
     }
 
-    if (isDealAvailable) drinksContainer.innerHTML += cardHtml;
-    if (dateSports.length > 0) sportsContainer.innerHTML += cardHtml;
+    if (hhInfo.valid) drinksContainer.innerHTML += cardHtml;
+    if (validSports.length > 0) sportsContainer.innerHTML += cardHtml;
   });
 
   if (homeContainer.innerHTML === '') {
-    homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6">No active deals or live sports scheduled for this selection.</p>';
+    homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">No active deals or live sports happening right now.</p>';
   }
 
   document.getElementById('count-deals').textContent = activeDealsCount;
@@ -181,10 +246,22 @@ function applyFilters() {
 
 function switchTab(tabName) {
   const filterContainer = document.getElementById('filter-container');
+  const dateWrapper = document.getElementById('date-filter-wrapper');
+  const dateSelect = document.getElementById('date-filter');
+
   if (tabName === 'contact') {
     filterContainer.classList.add('hidden');
+  } else if (tabName === 'home') {
+    filterContainer.classList.remove('hidden');
+    dateWrapper.classList.add('hidden');
+    filterContainer.classList.remove('grid-cols-2');
+    filterContainer.classList.add('grid-cols-1');
+    dateSelect.value = getTodayString(); // Reset to today
   } else {
     filterContainer.classList.remove('hidden');
+    dateWrapper.classList.remove('hidden');
+    filterContainer.classList.remove('grid-cols-1');
+    filterContainer.classList.add('grid-cols-2');
   }
 
   ['home', 'drinks', 'sports', 'contact'].forEach(tab => {
@@ -200,6 +277,8 @@ function switchTab(tabName) {
       navBtn.classList.add('text-gray-400');
     }
   });
+
+  applyFilters();
 }
 
 populateDateFilter();
