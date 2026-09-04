@@ -1,6 +1,6 @@
 let globalVenues = [];
 
-const API_URL = 'https://script.google.com/a/macros/um.edu.mt/s/AKfycbzjd2tfeFJHu3fNfDuO1JSJDJvv0yYDM5CZRcYUhUffP85QsHlRrMGahOiwtzRQVXerKA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx0hEQWotAFfJgYbEVN8IWYfG-LnJnpj-SLXIZqL_ll5pq1Q9D4Bc440RssN8tZBs81/exec';
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
