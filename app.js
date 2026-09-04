@@ -10,7 +10,7 @@ function parseTimeRobust(val, startMins = null) {
   if (!val) return { mins: null, cleanStr: '' };
   let s = String(val).trim().toLowerCase();
 
-  // 1. Check for 12-hour format with am/pm or p/a (e.g., "11pm", "11:00 pm", "11p")
+  // 1. Match 12-hour formats with AM/PM (11pm, 11:00 pm, 11p)
   let mAmPm = s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)/);
   if (mAmPm) {
     let hh = parseInt(mAmPm[1], 10);
@@ -23,7 +23,7 @@ function parseTimeRobust(val, startMins = null) {
     return { mins, cleanStr };
   }
 
-  // 2. Check for HH:MM (:SS)
+  // 2. Match HH:MM (:SS)
   let mHhmm = s.match(/(\d{1,2}):(\d{2})/);
   if (mHhmm) {
     let hh = parseInt(mHhmm[1], 10);
@@ -34,8 +34,7 @@ function parseTimeRobust(val, startMins = null) {
 
     let mins = hh * 60 + mm;
 
-    // Smart Fix: If end time (e.g., 11:00 = 660 mins) is smaller than start time (e.g., 16:00 = 960 mins)
-    // and hh < 12, it was intended as 11 PM (23:00 = 1380 mins)
+    // Auto-fix: If end time < start time (e.g. start 16:00, end 11:00), treat 11:00 as 23:00 (11 PM)
     if (startMins !== null && mins < startMins && hh < 12) {
       if ((mins + 720) > startMins) {
         hh += 12;
@@ -46,7 +45,7 @@ function parseTimeRobust(val, startMins = null) {
     return { mins, cleanStr };
   }
 
-  // 3. Pure numbers like "23" or "11"
+  // 3. Match pure numbers like "23" or "11"
   let mNum = s.match(/^(\d{1,2})$/);
   if (mNum) {
     let hh = parseInt(mNum[1], 10);
@@ -86,7 +85,7 @@ function cleanDateYYYYMMDD(val) {
 function checkDayActive(daysVal, targetDayName) {
   if (!daysVal) return false;
   let str = Array.isArray(daysVal) ? daysVal.join(' ').toLowerCase() : String(daysVal).toLowerCase();
-  let target = targetDayName.toLowerCase(); // "fri"
+  let target = targetDayName.toLowerCase();
 
   if (str.includes('mon') && str.includes('fri') && (str.includes('-') || str.includes('to'))) return true;
   if (str.includes('mon') && str.includes('sat') && (str.includes('-') || str.includes('to'))) return true;
@@ -134,7 +133,6 @@ function populateDateFilter() {
   }
 }
 
-// Evaluate Happy Hour availability & status
 function getHHStatus(venue, selectedDateStr) {
   if (!venue.happyHour || !venue.happyHour.active || !venue.happyHour.days) {
     return { valid: false, status: 'none' };
@@ -186,7 +184,6 @@ function getHHStatus(venue, selectedDateStr) {
   return { valid: false, status: 'none' };
 }
 
-// Filter valid sports
 function getValidSports(venue, selectedDateStr) {
   const isToday = selectedDateStr === getTodayString();
   const now = new Date();
@@ -344,15 +341,9 @@ function applyFilters() {
 
     const cardHtml = createVenueCard(venue, hhInfo, validSports, isSelectedToday);
 
-    if (isSelectedToday) {
-      const isHHLiveOrImminent = hhInfo.valid && (hhInfo.status === 'live' || hhInfo.status === 'last_drink' || hhInfo.status === 'starting_soon');
-      if (isHHLiveOrImminent || validSports.length > 0) {
-        if (homeContainer) homeContainer.innerHTML += cardHtml;
-      }
-    } else {
-      if (hhInfo.valid || validSports.length > 0) {
-        if (homeContainer) homeContainer.innerHTML += cardHtml;
-      }
+    // Show on Home tab if there's any active deal or sports today
+    if (hhInfo.valid || validSports.length > 0) {
+      if (homeContainer) homeContainer.innerHTML += cardHtml;
     }
 
     if (hhInfo.valid && drinksContainer) drinksContainer.innerHTML += cardHtml;
@@ -360,7 +351,7 @@ function applyFilters() {
   });
 
   if (homeContainer && homeContainer.innerHTML === '') {
-    homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">No matching deals or live sports found.</p>';
+    homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">No active deals or live sports found for this selection.</p>';
   }
 
   const countDealsElem = document.getElementById('count-deals');
@@ -413,7 +404,7 @@ function switchTab(tabName) {
   applyFilters();
 }
 
-// PWA Install Prompt
+// PWA Install Banner Logic
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -443,10 +434,11 @@ populateDateFilter();
 
 const homeListElem = document.getElementById('home-venue-list');
 if (homeListElem) {
-  homeListElem.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm animate-pulse">Loading live deals from Google Sheet...</p>';
+  homeListElem.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm animate-pulse">Fetching latest live data...</p>';
 }
 
-fetch(API_URL)
+// FORCE FRESH FETCH WITH CACHE-BUSTING TIMESTAMP
+fetch(`${API_URL}?t=${Date.now()}`, { cache: 'no-store' })
   .then(res => res.json())
   .then(venues => {
     globalVenues = venues;
