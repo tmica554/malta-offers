@@ -1,5 +1,7 @@
 let globalVenues = [];
 
+const API_URL = 'https://script.google.com/a/macros/um.edu.mt/s/AKfycbzjd2tfeFJHu3fNfDuO1JSJDJvv0yYDM5CZRcYUhUffP85QsHlRrMGahOiwtzRQVXerKA/exec';
+
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -167,6 +169,14 @@ function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
     ? validSports.map(s => `${s.category}: ${s.match} (${s.time})`).join(', ')
     : 'None scheduled';
 
+  // WhatsApp Pre-filled Invite Text
+  const shareMsg = `Check out ${venue.name} in ${venue.locality}!` +
+    (hhInfo.valid ? `\n🍺 Happy Hour: ${venue.happyHour.deal}` : '') +
+    (validSports.length > 0 ? `\n⚽ Live Sports: ${sportsHtml}` : '') +
+    `\n📍 Location: ${venue.googleMapsUrl}`;
+  
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
+
   return `
     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
       <div class="flex justify-between items-start">
@@ -182,9 +192,14 @@ function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
       <div class="text-sm text-gray-600">
         <strong>Sports:</strong> ${sportsHtml}
       </div>
-      <a href="${venue.googleMapsUrl}" target="_blank" class="block text-center bg-red-600 text-white text-sm py-2 rounded-lg font-semibold text-white">
-        Get Directions
-      </a>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <a href="${venue.googleMapsUrl}" target="_blank" class="block text-center bg-red-600 text-white text-xs py-2 px-2 rounded-lg font-semibold">
+          📍 Directions
+        </a>
+        <a href="${whatsappUrl}" target="_blank" class="block text-center bg-emerald-600 text-white text-xs py-2 px-2 rounded-lg font-semibold flex items-center justify-center gap-1">
+          💬 Share (WA)
+        </a>
+      </div>
     </div>
   `;
 }
@@ -283,11 +298,19 @@ function switchTab(tabName) {
 
 populateDateFilter();
 
-fetch('data.json')
+// Show initial loading state
+document.getElementById('home-venue-list').innerHTML = '<p class="text-gray-400 text-center py-6 text-sm animate-pulse">Loading live deals from Google Sheet...</p>';
+
+// Fetch directly from Google Apps Script Web App
+fetch(API_URL)
   .then(res => res.json())
   .then(venues => {
     globalVenues = venues;
     applyFilters();
+  })
+  .catch(err => {
+    console.error('Error fetching sheet data:', err);
+    document.getElementById('home-venue-list').innerHTML = '<p class="text-red-500 text-center py-6 text-sm">Failed to load live data. Check Google Sheet permissions.</p>';
   });
 
 if ('serviceWorker' in navigator) {
