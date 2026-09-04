@@ -5,25 +5,63 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwIZmQuDwQRcgzFON57xmkU
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// --- Helper Sanitizers ---
-function cleanTimeHHMM(val) {
-  if (!val) return '';
-  const str = String(val).trim();
-  const match = str.match(/(\d{1,2}):(\d{2})/);
-  if (match) {
-    const hh = match[1].padStart(2, '0');
-    const mm = match[2];
-    return `${hh}:${mm}`;
-  }
-  return str;
-}
+// --- Smart Time & Date Parsing ---
+function parseTimeRobust(val, startMins = null) {
+  if (!val) return { mins: null, cleanStr: '' };
+  let s = String(val).trim().toLowerCase();
 
-function parseTimeToMinutes(val) {
-  const clean = cleanTimeHHMM(val);
-  if (!clean || !clean.includes(':')) return null;
-  const [hh, mm] = clean.split(':').map(Number);
-  if (isNaN(hh) || isNaN(mm)) return null;
-  return hh * 60 + mm;
+  // 1. Check for 12-hour format with am/pm or p/a (e.g., "11pm", "11:00 pm", "11p")
+  let mAmPm = s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)/);
+  if (mAmPm) {
+    let hh = parseInt(mAmPm[1], 10);
+    let mm = mAmPm[2] ? parseInt(mAmPm[2], 10) : 0;
+    let ampm = mAmPm[3];
+    if (ampm.startsWith('p') && hh < 12) hh += 12;
+    if (ampm.startsWith('a') && hh === 12) hh = 0;
+    let mins = hh * 60 + mm;
+    let cleanStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    return { mins, cleanStr };
+  }
+
+  // 2. Check for HH:MM (:SS)
+  let mHhmm = s.match(/(\d{1,2}):(\d{2})/);
+  if (mHhmm) {
+    let hh = parseInt(mHhmm[1], 10);
+    let mm = parseInt(mHhmm[2], 10);
+
+    if (s.includes('pm') && hh < 12) hh += 12;
+    if (s.includes('am') && hh === 12) hh = 0;
+
+    let mins = hh * 60 + mm;
+
+    // Smart Fix: If end time (e.g., 11:00 = 660 mins) is smaller than start time (e.g., 16:00 = 960 mins)
+    // and hh < 12, it was intended as 11 PM (23:00 = 1380 mins)
+    if (startMins !== null && mins < startMins && hh < 12) {
+      if ((mins + 720) > startMins) {
+        hh += 12;
+        mins = hh * 60 + mm;
+      }
+    }
+    let cleanStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    return { mins, cleanStr };
+  }
+
+  // 3. Pure numbers like "23" or "11"
+  let mNum = s.match(/^(\d{1,2})$/);
+  if (mNum) {
+    let hh = parseInt(mNum[1], 10);
+    let mm = 0;
+    if (startMins !== null && hh < 12 && (hh * 60) < startMins) {
+      if (((hh + 12) * 60) > startMins) {
+        hh += 12;
+      }
+    }
+    let mins = hh * 60 + mm;
+    let cleanStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    return { mins, cleanStr };
+  }
+
+  return { mins: null, cleanStr: String(val).trim() };
 }
 
 function cleanDateYYYYMMDD(val) {
@@ -43,6 +81,19 @@ function cleanDateYYYYMMDD(val) {
     return `${yyyy}-${mm}-${dd}`;
   }
   return str;
+}
+
+function checkDayActive(daysVal, targetDayName) {
+  if (!daysVal) return false;
+  let str = Array.isArray(daysVal) ? daysVal.join(' ').toLowerCase() : String(daysVal).toLowerCase();
+  let target = targetDayName.toLowerCase(); // "fri"
+
+  if (str.includes('mon') && str.includes('fri') && (str.includes('-') || str.includes('to'))) return true;
+  if (str.includes('mon') && str.includes('sat') && (str.includes('-') || str.includes('to'))) return true;
+  if (str.includes('mon') && str.includes('sun') && (str.includes('-') || str.includes('to'))) return true;
+  if (str.includes('daily') || str.includes('everyday') || str.includes('all')) return true;
+
+  return str.includes(target) || str.includes('friday');
 }
 
 function getTodayString() {
@@ -83,7 +134,7 @@ function populateDateFilter() {
   }
 }
 
-// Evaluate Happy Hour availability & time window
+// Evaluate Happy Hour availability & status
 function getHHStatus(venue, selectedDateStr) {
   if (!venue.happyHour || !venue.happyHour.active || !venue.happyHour.days) {
     return { valid: false, status: 'none' };
@@ -92,7 +143,7 @@ function getHHStatus(venue, selectedDateStr) {
   const selectedDateObj = new Date(selectedDateStr + 'T00:00:00');
   const selectedDayName = DAYS_SHORT[selectedDateObj.getDay()];
 
-  if (!venue.happyHour.days.includes(selectedDayName)) {
+  if (!checkDayActive(venue.happyHour.days, selectedDayName)) {
     return { valid: false, status: 'none' };
   }
 
@@ -101,34 +152,34 @@ function getHHStatus(venue, selectedDateStr) {
     return { valid: true, status: 'scheduled' };
   }
 
-  const startMins = parseTimeToMinutes(venue.happyHour.startTime);
-  const endMins = parseTimeToMinutes(venue.happyHour.endTime);
+  const startParsed = parseTimeRobust(venue.happyHour.startTime);
+  const endParsed = parseTimeRobust(venue.happyHour.endTime, startParsed.mins);
 
-  if (startMins === null || endMins === null) {
+  if (startParsed.mins === null || endParsed.mins === null) {
     return { valid: false, status: 'none' };
   }
 
   const now = new Date();
   const currentMins = now.getHours() * 60 + now.getMinutes();
 
-  if (currentMins >= endMins) {
+  if (currentMins >= endParsed.mins) {
     return { valid: false, status: 'ended' };
   }
 
-  if (currentMins >= startMins && currentMins < endMins) {
-    const minsLeft = endMins - currentMins;
+  if (currentMins >= startParsed.mins && currentMins < endParsed.mins) {
+    const minsLeft = endParsed.mins - currentMins;
     if (minsLeft <= 30) {
       return { valid: true, status: 'last_drink', minsLeft };
     }
     return { valid: true, status: 'live' };
   }
 
-  if (currentMins < startMins && (startMins - currentMins) <= 60) {
-    const minsUntil = startMins - currentMins;
+  if (currentMins < startParsed.mins && (startParsed.mins - currentMins) <= 60) {
+    const minsUntil = startParsed.mins - currentMins;
     return { valid: true, status: 'starting_soon', minsUntil };
   }
 
-  if (currentMins < startMins) {
+  if (currentMins < startParsed.mins) {
     return { valid: true, status: 'later_today' };
   }
 
@@ -146,8 +197,8 @@ function getValidSports(venue, selectedDateStr) {
     if (cleanDate !== selectedDateStr) return false;
 
     if (isToday && s.time) {
-      const matchStartMins = parseTimeToMinutes(s.time);
-      if (matchStartMins !== null && currentMins >= matchStartMins + 115) {
+      const matchParsed = parseTimeRobust(s.time);
+      if (matchParsed.mins !== null && currentMins >= matchParsed.mins + 115) {
         return false;
       }
     }
@@ -182,16 +233,16 @@ function getBadgesHtml(hhInfo, validSports, isSelectedToday) {
     } else {
       validSports.forEach(s => {
         if (s.time) {
-          const matchStartMins = parseTimeToMinutes(s.time);
-          if (matchStartMins !== null) {
-            const matchEndMins = matchStartMins + 115;
-            if (currentMins >= matchStartMins && currentMins < matchEndMins) {
+          const matchParsed = parseTimeRobust(s.time);
+          if (matchParsed.mins !== null) {
+            const matchEndMins = matchParsed.mins + 115;
+            if (currentMins >= matchParsed.mins && currentMins < matchEndMins) {
               badges.push('<span class="bg-emerald-600 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚽ MATCH LIVE</span>');
-            } else if (currentMins < matchStartMins && (matchStartMins - currentMins) <= 60) {
-              const minsUntil = matchStartMins - currentMins;
+            } else if (currentMins < matchParsed.mins && (matchParsed.mins - currentMins) <= 60) {
+              const minsUntil = matchParsed.mins - currentMins;
               badges.push(`<span class="bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">⚽ KICKOFF IN ${minsUntil}M</span>`);
-            } else if (currentMins < matchStartMins) {
-              badges.push(`<span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match (${s.time})</span>`);
+            } else if (currentMins < matchParsed.mins) {
+              badges.push(`<span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match (${matchParsed.cleanStr})</span>`);
             }
           }
         }
@@ -205,8 +256,11 @@ function getBadgesHtml(hhInfo, validSports, isSelectedToday) {
 function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
   const badgeHtml = getBadgesHtml(hhInfo, validSports, isSelectedToday);
 
+  const startClean = parseTimeRobust(venue.happyHour?.startTime).cleanStr;
+  const endClean = parseTimeRobust(venue.happyHour?.endTime, parseTimeRobust(venue.happyHour?.startTime).mins).cleanStr;
+
   const sportsHtml = validSports.length > 0
-    ? validSports.map(s => `${s.category}: ${s.match} (${s.time})`).join(', ')
+    ? validSports.map(s => `${s.category}: ${s.match} (${parseTimeRobust(s.time).cleanStr})`).join(', ')
     : 'None scheduled';
 
   const shareMsg = `Check out ${venue.name} in ${venue.locality}!` +
@@ -226,7 +280,7 @@ function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
         ${badgeHtml}
       </div>
       <div class="text-sm bg-red-50 text-red-900 p-2.5 rounded-lg">
-        <strong>Happy Hour:</strong> ${hhInfo.valid ? `${venue.happyHour.deal} (${venue.happyHour.startTime} - ${venue.happyHour.endTime})` : 'No active deal'}
+        <strong>Happy Hour:</strong> ${hhInfo.valid ? `${venue.happyHour.deal} (${startClean} - ${endClean})` : 'No active deal'}
       </div>
       <div class="text-sm text-gray-600">
         <strong>Sports:</strong> ${sportsHtml}
@@ -395,22 +449,7 @@ if (homeListElem) {
 fetch(API_URL)
   .then(res => res.json())
   .then(venues => {
-    // Sanitize raw Google Sheet outputs
-    globalVenues = venues.map(venue => {
-      if (venue.happyHour) {
-        venue.happyHour.startTime = cleanTimeHHMM(venue.happyHour.startTime);
-        venue.happyHour.endTime = cleanTimeHHMM(venue.happyHour.endTime);
-      }
-      if (venue.sports && Array.isArray(venue.sports)) {
-        venue.sports = venue.sports.map(s => ({
-          ...s,
-          time: cleanTimeHHMM(s.time),
-          date: cleanDateYYYYMMDD(s.date)
-        }));
-      }
-      return venue;
-    });
-
+    globalVenues = venues;
     applyFilters();
   })
   .catch(err => {
