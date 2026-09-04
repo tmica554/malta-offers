@@ -1,6 +1,6 @@
 let globalVenues = [];
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbx0hEQWotAFfJgYbEVN8IWYfG-LnJnpj-SLXIZqL_ll5pq1Q9D4Bc440RssN8tZBs81/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIZmQuDwQRcgzFON57xmkUEKISa6YHmVIqnpyhOkLZOUHKrCQeks5oepVAAyW7HRLH8Q/exec';
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -71,7 +71,6 @@ function getHHStatus(venue, selectedDateStr) {
   const [eH, eM] = venue.happyHour.endTime.split(':').map(Number);
   const endMins = eH * 60 + eM;
 
-  // EXPIRED DEAL: Automatically hide if current time passed end time
   if (currentMins >= endMins) {
     return { valid: false, status: 'ended' };
   }
@@ -96,7 +95,7 @@ function getHHStatus(venue, selectedDateStr) {
   return { valid: false, status: 'none' };
 }
 
-// Filter valid sports (hiding finished matches on today's view)
+// Filter valid sports
 function getValidSports(venue, selectedDateStr) {
   const isToday = selectedDateStr === getTodayString();
   const now = new Date();
@@ -107,7 +106,7 @@ function getValidSports(venue, selectedDateStr) {
     if (isToday && s.time) {
       const [mH, mM] = s.time.split(':').map(Number);
       const matchStartMins = mH * 60 + mM;
-      if (currentMins >= matchStartMins + 115) return false; // Match finished
+      if (currentMins >= matchStartMins + 115) return false;
     }
     return true;
   });
@@ -118,7 +117,6 @@ function getBadgesHtml(hhInfo, validSports, isSelectedToday) {
   const now = new Date();
   const currentMins = now.getHours() * 60 + now.getMinutes();
 
-  // Happy Hour Badges
   if (hhInfo.valid) {
     if (!isSelectedToday) {
       badges.push('<span class="bg-blue-100 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold">🍺 HH Scheduled</span>');
@@ -135,7 +133,6 @@ function getBadgesHtml(hhInfo, validSports, isSelectedToday) {
     }
   }
 
-  // Sports Badges
   if (validSports.length > 0) {
     if (!isSelectedToday) {
       badges.push('<span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match Day</span>');
@@ -169,7 +166,6 @@ function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
     ? validSports.map(s => `${s.category}: ${s.match} (${s.time})`).join(', ')
     : 'None scheduled';
 
-  // WhatsApp Pre-filled Invite Text
   const shareMsg = `Check out ${venue.name} in ${venue.locality}!` +
     (hhInfo.valid ? `\n🍺 Happy Hour: ${venue.happyHour.deal}` : '') +
     (validSports.length > 0 ? `\n⚽ Live Sports: ${sportsHtml}` : '') +
@@ -208,9 +204,27 @@ function applyFilters() {
   const dateSelect = document.getElementById('date-filter');
   const selectedDateStr = dateSelect.value || getTodayString();
   const selectedLocality = document.getElementById('locality-filter').value;
+  const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
 
   const isSelectedToday = selectedDateStr === getTodayString();
-  const filtered = globalVenues.filter(v => selectedLocality === 'ALL' || v.locality === selectedLocality);
+
+  // Integrated Search + Locality Filtering
+  const filtered = globalVenues.filter(venue => {
+    const matchLocality = selectedLocality === 'ALL' || venue.locality === selectedLocality;
+    if (!matchLocality) return false;
+
+    if (!searchTerm) return true;
+
+    const nameMatch = venue.name.toLowerCase().includes(searchTerm);
+    const localityMatch = venue.locality.toLowerCase().includes(searchTerm);
+    const dealMatch = (venue.happyHour?.deal || '').toLowerCase().includes(searchTerm);
+    const sportsMatch = (venue.sports || []).some(s => 
+      s.match.toLowerCase().includes(searchTerm) || 
+      s.category.toLowerCase().includes(searchTerm)
+    );
+
+    return nameMatch || localityMatch || dealMatch || sportsMatch;
+  });
 
   const homeContainer = document.getElementById('home-venue-list');
   const drinksContainer = document.getElementById('drinks-list');
@@ -234,7 +248,6 @@ function applyFilters() {
 
     const cardHtml = createVenueCard(venue, hhInfo, validSports, isSelectedToday);
 
-    // HOME TAB STRICT FILTER: Show only live/imminent HH or live/upcoming sports today
     if (isSelectedToday) {
       const isHHLiveOrImminent = hhInfo.valid && (hhInfo.status === 'live' || hhInfo.status === 'last_drink' || hhInfo.status === 'starting_soon');
       if (isHHLiveOrImminent || validSports.length > 0) {
@@ -251,7 +264,7 @@ function applyFilters() {
   });
 
   if (homeContainer.innerHTML === '') {
-    homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">No active deals or live sports happening right now.</p>';
+    homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">No matching deals or live sports found.</p>';
   }
 
   document.getElementById('count-deals').textContent = activeDealsCount;
@@ -271,7 +284,7 @@ function switchTab(tabName) {
     dateWrapper.classList.add('hidden');
     filterContainer.classList.remove('grid-cols-2');
     filterContainer.classList.add('grid-cols-1');
-    dateSelect.value = getTodayString(); // Reset to today
+    dateSelect.value = getTodayString();
   } else {
     filterContainer.classList.remove('hidden');
     dateWrapper.classList.remove('hidden');
@@ -296,12 +309,37 @@ function switchTab(tabName) {
   applyFilters();
 }
 
+// PWA Installation Banner & Prompt Handling
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.remove('hidden');
+});
+
+document.getElementById('pwa-install-btn')?.addEventListener('click', () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('pwa-install-banner').classList.add('hidden');
+    });
+  }
+});
+
+// Detect iOS Safari (show pin instruction banner if not installed)
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+if (isIOS && !isStandalone) {
+  const iosBanner = document.getElementById('ios-install-banner');
+  if (iosBanner) iosBanner.classList.remove('hidden');
+}
+
 populateDateFilter();
 
-// Show initial loading state
 document.getElementById('home-venue-list').innerHTML = '<p class="text-gray-400 text-center py-6 text-sm animate-pulse">Loading live deals from Google Sheet...</p>';
 
-// Fetch directly from Google Apps Script Web App
 fetch(API_URL)
   .then(res => res.json())
   .then(venues => {
@@ -310,7 +348,7 @@ fetch(API_URL)
   })
   .catch(err => {
     console.error('Error fetching sheet data:', err);
-    document.getElementById('home-venue-list').innerHTML = '<p class="text-red-500 text-center py-6 text-sm">Failed to load live data. Check Google Sheet permissions.</p>';
+    document.getElementById('home-venue-list').innerHTML = '<p class="text-red-500 text-center py-6 text-sm">Failed to load live data.</p>';
   });
 
 if ('serviceWorker' in navigator) {
