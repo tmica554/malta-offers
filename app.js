@@ -5,6 +5,46 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwIZmQuDwQRcgzFON57xmkU
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// --- Helper Sanitizers ---
+function cleanTimeHHMM(val) {
+  if (!val) return '';
+  const str = String(val).trim();
+  const match = str.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    const hh = match[1].padStart(2, '0');
+    const mm = match[2];
+    return `${hh}:${mm}`;
+  }
+  return str;
+}
+
+function parseTimeToMinutes(val) {
+  const clean = cleanTimeHHMM(val);
+  if (!clean || !clean.includes(':')) return null;
+  const [hh, mm] = clean.split(':').map(Number);
+  if (isNaN(hh) || isNaN(mm)) return null;
+  return hh * 60 + mm;
+}
+
+function cleanDateYYYYMMDD(val) {
+  if (!val) return '';
+  const str = String(val).trim();
+  const m1 = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (m1) return `${m1[1]}-${m1[2].padStart(2, '0')}-${m1[3].padStart(2, '0')}`;
+  
+  const m2 = str.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/);
+  if (m2) return `${m2[3]}-${m2[2].padStart(2, '0')}-${m2[1].padStart(2, '0')}`;
+
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    const yyyy = parsed.getFullYear();
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return str;
+}
+
 function getTodayString() {
   const today = new Date();
   const year = today.getFullYear();
@@ -15,6 +55,7 @@ function getTodayString() {
 
 function populateDateFilter() {
   const dateSelect = document.getElementById('date-filter');
+  if (!dateSelect) return;
   dateSelect.innerHTML = '';
 
   const today = new Date();
@@ -60,16 +101,15 @@ function getHHStatus(venue, selectedDateStr) {
     return { valid: true, status: 'scheduled' };
   }
 
-  if (!venue.happyHour.startTime || !venue.happyHour.endTime) {
+  const startMins = parseTimeToMinutes(venue.happyHour.startTime);
+  const endMins = parseTimeToMinutes(venue.happyHour.endTime);
+
+  if (startMins === null || endMins === null) {
     return { valid: false, status: 'none' };
   }
 
   const now = new Date();
   const currentMins = now.getHours() * 60 + now.getMinutes();
-  const [sH, sM] = venue.happyHour.startTime.split(':').map(Number);
-  const startMins = sH * 60 + sM;
-  const [eH, eM] = venue.happyHour.endTime.split(':').map(Number);
-  const endMins = eH * 60 + eM;
 
   if (currentMins >= endMins) {
     return { valid: false, status: 'ended' };
@@ -102,11 +142,14 @@ function getValidSports(venue, selectedDateStr) {
   const currentMins = now.getHours() * 60 + now.getMinutes();
 
   return (venue.sports || []).filter(s => {
-    if (s.date !== selectedDateStr) return false;
+    const cleanDate = cleanDateYYYYMMDD(s.date);
+    if (cleanDate !== selectedDateStr) return false;
+
     if (isToday && s.time) {
-      const [mH, mM] = s.time.split(':').map(Number);
-      const matchStartMins = mH * 60 + mM;
-      if (currentMins >= matchStartMins + 115) return false;
+      const matchStartMins = parseTimeToMinutes(s.time);
+      if (matchStartMins !== null && currentMins >= matchStartMins + 115) {
+        return false;
+      }
     }
     return true;
   });
@@ -139,17 +182,17 @@ function getBadgesHtml(hhInfo, validSports, isSelectedToday) {
     } else {
       validSports.forEach(s => {
         if (s.time) {
-          const [mH, mM] = s.time.split(':').map(Number);
-          const matchStartMins = mH * 60 + mM;
-          const matchEndMins = matchStartMins + 115;
-
-          if (currentMins >= matchStartMins && currentMins < matchEndMins) {
-            badges.push('<span class="bg-emerald-600 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚽ MATCH LIVE</span>');
-          } else if (currentMins < matchStartMins && (matchStartMins - currentMins) <= 60) {
-            const minsUntil = matchStartMins - currentMins;
-            badges.push(`<span class="bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">⚽ KICKOFF IN ${minsUntil}M</span>`);
-          } else if (currentMins < matchStartMins) {
-            badges.push(`<span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match (${s.time})</span>`);
+          const matchStartMins = parseTimeToMinutes(s.time);
+          if (matchStartMins !== null) {
+            const matchEndMins = matchStartMins + 115;
+            if (currentMins >= matchStartMins && currentMins < matchEndMins) {
+              badges.push('<span class="bg-emerald-600 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚽ MATCH LIVE</span>');
+            } else if (currentMins < matchStartMins && (matchStartMins - currentMins) <= 60) {
+              const minsUntil = matchStartMins - currentMins;
+              badges.push(`<span class="bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">⚽ KICKOFF IN ${minsUntil}M</span>`);
+            } else if (currentMins < matchStartMins) {
+              badges.push(`<span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-bold">⚽ Match (${s.time})</span>`);
+            }
           }
         }
       });
@@ -202,13 +245,12 @@ function createVenueCard(venue, hhInfo, validSports, isSelectedToday) {
 
 function applyFilters() {
   const dateSelect = document.getElementById('date-filter');
-  const selectedDateStr = dateSelect.value || getTodayString();
-  const selectedLocality = document.getElementById('locality-filter').value;
+  const selectedDateStr = dateSelect?.value || getTodayString();
+  const selectedLocality = document.getElementById('locality-filter')?.value || 'ALL';
   const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
 
   const isSelectedToday = selectedDateStr === getTodayString();
 
-  // Integrated Search + Locality Filtering
   const filtered = globalVenues.filter(venue => {
     const matchLocality = selectedLocality === 'ALL' || venue.locality === selectedLocality;
     if (!matchLocality) return false;
@@ -230,9 +272,9 @@ function applyFilters() {
   const drinksContainer = document.getElementById('drinks-list');
   const sportsContainer = document.getElementById('sports-list');
 
-  homeContainer.innerHTML = '';
-  drinksContainer.innerHTML = '';
-  sportsContainer.innerHTML = '';
+  if (homeContainer) homeContainer.innerHTML = '';
+  if (drinksContainer) drinksContainer.innerHTML = '';
+  if (sportsContainer) sportsContainer.innerHTML = '';
 
   let activeDealsCount = 0;
   let plCount = 0;
@@ -251,25 +293,29 @@ function applyFilters() {
     if (isSelectedToday) {
       const isHHLiveOrImminent = hhInfo.valid && (hhInfo.status === 'live' || hhInfo.status === 'last_drink' || hhInfo.status === 'starting_soon');
       if (isHHLiveOrImminent || validSports.length > 0) {
-        homeContainer.innerHTML += cardHtml;
+        if (homeContainer) homeContainer.innerHTML += cardHtml;
       }
     } else {
       if (hhInfo.valid || validSports.length > 0) {
-        homeContainer.innerHTML += cardHtml;
+        if (homeContainer) homeContainer.innerHTML += cardHtml;
       }
     }
 
-    if (hhInfo.valid) drinksContainer.innerHTML += cardHtml;
-    if (validSports.length > 0) sportsContainer.innerHTML += cardHtml;
+    if (hhInfo.valid && drinksContainer) drinksContainer.innerHTML += cardHtml;
+    if (validSports.length > 0 && sportsContainer) sportsContainer.innerHTML += cardHtml;
   });
 
-  if (homeContainer.innerHTML === '') {
+  if (homeContainer && homeContainer.innerHTML === '') {
     homeContainer.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">No matching deals or live sports found.</p>';
   }
 
-  document.getElementById('count-deals').textContent = activeDealsCount;
-  document.getElementById('count-pl').textContent = plCount;
-  document.getElementById('count-f1').textContent = f1Count;
+  const countDealsElem = document.getElementById('count-deals');
+  const countPlElem = document.getElementById('count-pl');
+  const countF1Elem = document.getElementById('count-f1');
+
+  if (countDealsElem) countDealsElem.textContent = activeDealsCount;
+  if (countPlElem) countPlElem.textContent = plCount;
+  if (countF1Elem) countF1Elem.textContent = f1Count;
 }
 
 function switchTab(tabName) {
@@ -277,39 +323,43 @@ function switchTab(tabName) {
   const dateWrapper = document.getElementById('date-filter-wrapper');
   const dateSelect = document.getElementById('date-filter');
 
-  if (tabName === 'contact') {
-    filterContainer.classList.add('hidden');
-  } else if (tabName === 'home') {
-    filterContainer.classList.remove('hidden');
-    dateWrapper.classList.add('hidden');
-    filterContainer.classList.remove('grid-cols-2');
-    filterContainer.classList.add('grid-cols-1');
-    dateSelect.value = getTodayString();
-  } else {
-    filterContainer.classList.remove('hidden');
-    dateWrapper.classList.remove('hidden');
-    filterContainer.classList.remove('grid-cols-1');
-    filterContainer.classList.add('grid-cols-2');
+  if (filterContainer) {
+    if (tabName === 'contact') {
+      filterContainer.classList.add('hidden');
+    } else if (tabName === 'home') {
+      filterContainer.classList.remove('hidden');
+      if (dateWrapper) dateWrapper.classList.add('hidden');
+      filterContainer.classList.remove('grid-cols-2');
+      filterContainer.classList.add('grid-cols-1');
+      if (dateSelect) dateSelect.value = getTodayString();
+    } else {
+      filterContainer.classList.remove('hidden');
+      if (dateWrapper) dateWrapper.classList.remove('hidden');
+      filterContainer.classList.remove('grid-cols-1');
+      filterContainer.classList.add('grid-cols-2');
+    }
   }
 
   ['home', 'drinks', 'sports', 'contact'].forEach(tab => {
     const content = document.getElementById(`tab-${tab}-content`);
     const navBtn = document.getElementById(`nav-${tab}`);
-    if (tab === tabName) {
-      content.classList.remove('hidden');
-      navBtn.classList.add('text-red-600');
-      navBtn.classList.remove('text-gray-400');
-    } else {
-      content.classList.add('hidden');
-      navBtn.classList.remove('text-red-600');
-      navBtn.classList.add('text-gray-400');
+    if (content && navBtn) {
+      if (tab === tabName) {
+        content.classList.remove('hidden');
+        navBtn.classList.add('text-red-600');
+        navBtn.classList.remove('text-gray-400');
+      } else {
+        content.classList.add('hidden');
+        navBtn.classList.remove('text-red-600');
+        navBtn.classList.add('text-gray-400');
+      }
     }
   });
 
   applyFilters();
 }
 
-// PWA Installation Banner & Prompt Handling
+// PWA Install Prompt
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -328,7 +378,6 @@ document.getElementById('pwa-install-btn')?.addEventListener('click', () => {
   }
 });
 
-// Detect iOS Safari (show pin instruction banner if not installed)
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 if (isIOS && !isStandalone) {
@@ -338,17 +387,37 @@ if (isIOS && !isStandalone) {
 
 populateDateFilter();
 
-document.getElementById('home-venue-list').innerHTML = '<p class="text-gray-400 text-center py-6 text-sm animate-pulse">Loading live deals from Google Sheet...</p>';
+const homeListElem = document.getElementById('home-venue-list');
+if (homeListElem) {
+  homeListElem.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm animate-pulse">Loading live deals from Google Sheet...</p>';
+}
 
 fetch(API_URL)
   .then(res => res.json())
   .then(venues => {
-    globalVenues = venues;
+    // Sanitize raw Google Sheet outputs
+    globalVenues = venues.map(venue => {
+      if (venue.happyHour) {
+        venue.happyHour.startTime = cleanTimeHHMM(venue.happyHour.startTime);
+        venue.happyHour.endTime = cleanTimeHHMM(venue.happyHour.endTime);
+      }
+      if (venue.sports && Array.isArray(venue.sports)) {
+        venue.sports = venue.sports.map(s => ({
+          ...s,
+          time: cleanTimeHHMM(s.time),
+          date: cleanDateYYYYMMDD(s.date)
+        }));
+      }
+      return venue;
+    });
+
     applyFilters();
   })
   .catch(err => {
     console.error('Error fetching sheet data:', err);
-    document.getElementById('home-venue-list').innerHTML = '<p class="text-red-500 text-center py-6 text-sm">Failed to load live data.</p>';
+    if (homeListElem) {
+      homeListElem.innerHTML = '<p class="text-red-500 text-center py-6 text-sm">Failed to load live data.</p>';
+    }
   });
 
 if ('serviceWorker' in navigator) {
